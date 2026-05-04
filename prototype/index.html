@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>タスク管理ボード</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f0f2f5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ヘッダー */
+    header {
+      background: #1e3a5f;
+      color: #fff;
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 2px 6px rgba(0,0,0,.25);
+    }
+    header h1 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      letter-spacing: .02em;
+    }
+    header .logo {
+      width: 32px; height: 32px;
+      background: #4a90d9;
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem;
+    }
+
+    /* ボードエリア */
+    main {
+      flex: 1;
+      padding: 24px;
+      overflow-x: auto;
+    }
+
+    .board {
+      display: flex;
+      gap: 16px;
+      min-width: max-content;
+    }
+
+    /* カラム */
+    .column {
+      background: #ebecf0;
+      border-radius: 10px;
+      width: 280px;
+      min-width: 280px;
+      display: flex;
+      flex-direction: column;
+      max-height: calc(100vh - 120px);
+    }
+
+    .column-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 14px 8px;
+    }
+    .column-title {
+      font-weight: 700;
+      font-size: .95rem;
+      color: #172b4d;
+    }
+    .column-count {
+      background: #c1c7d0;
+      color: #172b4d;
+      font-size: .78rem;
+      font-weight: 600;
+      border-radius: 12px;
+      padding: 1px 8px;
+      min-width: 24px;
+      text-align: center;
+    }
+
+    /* カードリスト */
+    .card-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 4px 10px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      transition: background .15s;
+      min-height: 60px;
+    }
+    .card-list.drag-over {
+      background: #d0e4ff;
+      border-radius: 8px;
+      outline: 2px dashed #4a90d9;
+      outline-offset: -2px;
+    }
+
+    /* カード */
+    .card {
+      background: #fff;
+      border-radius: 8px;
+      padding: 10px 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,.12);
+      position: relative;
+      cursor: grab;
+      transition: box-shadow .15s, transform .15s, opacity .15s;
+    }
+    .card:hover {
+      box-shadow: 0 3px 10px rgba(0,0,0,.18);
+      transform: translateY(-1px);
+    }
+    .card.dragging {
+      opacity: .4;
+      cursor: grabbing;
+      transform: rotate(1.5deg) scale(1.02);
+      box-shadow: 0 8px 24px rgba(0,0,0,.22);
+    }
+
+    /* ドロップ挿入インジケーター */
+    .drop-indicator {
+      height: 3px;
+      background: #4a90d9;
+      border-radius: 2px;
+      margin: 0 2px;
+      pointer-events: none;
+      flex-shrink: 0;
+    }
+
+    .card-title {
+      font-size: .9rem;
+      color: #172b4d;
+      line-height: 1.4;
+      word-break: break-word;
+      user-select: none;
+    }
+    .card-title.editable { cursor: text; }
+    .card-title.editable:hover { text-decoration: underline dashed #888; }
+
+    /* カード内の編集フォーム */
+    .card-edit-input {
+      width: 100%;
+      font-size: .9rem;
+      color: #172b4d;
+      border: 2px solid #4a90d9;
+      border-radius: 4px;
+      padding: 2px 4px;
+      outline: none;
+      resize: none;
+      font-family: inherit;
+      line-height: 1.4;
+    }
+
+    /* カードアクション行 */
+    .card-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      margin-top: 8px;
+    }
+
+    /* 汎用ボタン */
+    button {
+      cursor: pointer;
+      font-family: inherit;
+      border: none;
+      outline: none;
+      transition: background .15s, color .15s, opacity .15s;
+    }
+    button:focus-visible {
+      outline: 2px solid #4a90d9;
+      outline-offset: 2px;
+    }
+
+    .btn-delete {
+      background: transparent;
+      color: #bf2600;
+      border-radius: 5px;
+      width: 28px; height: 28px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1rem;
+      opacity: 0;
+      transition: opacity .15s;
+    }
+    .card:hover .btn-delete { opacity: 1; }
+    .btn-delete:hover { background: #ffebe6; }
+
+    /* カード追加ボタン */
+    .btn-add-card {
+      margin: 4px 10px 12px;
+      background: transparent;
+      color: #5e6c84;
+      border-radius: 6px;
+      padding: 8px 10px;
+      font-size: .88rem;
+      text-align: left;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-add-card:hover {
+      background: #c8d0e0;
+      color: #172b4d;
+    }
+    .btn-add-card .plus { font-size: 1.1rem; line-height: 1; }
+
+    /* インライン追加フォーム */
+    .add-card-form {
+      margin: 4px 10px 12px;
+      display: none;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .add-card-form.open { display: flex; }
+
+    .add-card-form textarea {
+      width: 100%;
+      border: 2px solid #4a90d9;
+      border-radius: 6px;
+      padding: 8px 10px;
+      font-size: .9rem;
+      font-family: inherit;
+      resize: none;
+      outline: none;
+      line-height: 1.4;
+      min-height: 60px;
+    }
+
+    .form-error {
+      font-size: .8rem;
+      color: #bf2600;
+      display: none;
+    }
+    .form-error.show { display: block; }
+
+    .add-card-form-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-primary {
+      background: #0052cc;
+      color: #fff;
+      border-radius: 4px;
+      padding: 6px 14px;
+      font-size: .88rem;
+      font-weight: 600;
+    }
+    .btn-primary:hover { background: #0065ff; }
+
+    .btn-cancel {
+      background: transparent;
+      color: #5e6c84;
+      border-radius: 4px;
+      padding: 6px 10px;
+      font-size: .88rem;
+    }
+    .btn-cancel:hover { background: #dfe1e6; color: #172b4d; }
+
+    /* モーダル確認ダイアログ */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(9,30,66,.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .2s;
+    }
+    .modal-overlay.open {
+      opacity: 1;
+      pointer-events: all;
+    }
+    .modal {
+      background: #fff;
+      border-radius: 10px;
+      padding: 28px 32px;
+      max-width: 380px;
+      width: 90%;
+      box-shadow: 0 8px 32px rgba(0,0,0,.22);
+    }
+    .modal h2 {
+      font-size: 1.05rem;
+      color: #172b4d;
+      margin-bottom: 10px;
+    }
+    .modal p {
+      font-size: .9rem;
+      color: #5e6c84;
+      margin-bottom: 22px;
+      line-height: 1.5;
+    }
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+    .btn-danger {
+      background: #de350b;
+      color: #fff;
+      border-radius: 4px;
+      padding: 7px 16px;
+      font-size: .88rem;
+      font-weight: 600;
+    }
+    .btn-danger:hover { background: #ff5630; }
+
+    /* レスポンシブ */
+    @media (max-width: 640px) {
+      .board {
+        flex-direction: column;
+        min-width: unset;
+      }
+      .column {
+        width: 100%;
+        min-width: unset;
+        max-height: none;
+      }
+      main { padding: 12px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo" aria-hidden="true">📋</div>
+  <h1>タスク管理ボード</h1>
+</header>
+
+<main>
+  <div class="board" id="board"></div>
+</main>
+
+<!-- 削除確認モーダル -->
+<div class="modal-overlay" id="deleteModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+  <div class="modal">
+    <h2 id="modalTitle">カードの削除</h2>
+    <p>「<span id="modalCardTitle"></span>」を本当に削除しますか？この操作は元に戻せません。</p>
+    <div class="modal-actions">
+      <button class="btn-cancel" id="modalCancel">キャンセル</button>
+      <button class="btn-danger" id="modalConfirm">削除</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  /* ---- データ ---- */
+  let data = [
+    { id: 'col-0', title: 'To Do', cards: [
+        { id: 'c1', title: 'デザインレビューの実施' },
+        { id: 'c2', title: 'バックエンドAPI設計書の作成' },
+      ]
+    },
+    { id: 'col-1', title: 'In Progress', cards: [
+        { id: 'c3', title: 'フロントエンドのプロトタイプ作成' },
+      ]
+    },
+    { id: 'col-2', title: 'Done', cards: [
+        { id: 'c4', title: '要件定義書の作成' },
+      ]
+    },
+  ];
+  let nextCardId = 5;
+
+  /* ---- ドラッグ状態 ---- */
+  let dragState = null; // { cardId, srcColIdx, srcCardIdx }
+
+  /* ---- モーダル ---- */
+  let pendingDelete = null;
+  const modalOverlay = document.getElementById('deleteModal');
+  const modalCardTitle = document.getElementById('modalCardTitle');
+  const modalCancel = document.getElementById('modalCancel');
+  const modalConfirm = document.getElementById('modalConfirm');
+
+  function openDeleteModal(colIdx, cardIdx) {
+    pendingDelete = { colIdx, cardIdx };
+    modalCardTitle.textContent = data[colIdx].cards[cardIdx].title;
+    modalOverlay.classList.add('open');
+    modalConfirm.focus();
+  }
+  function closeModal() {
+    pendingDelete = null;
+    modalOverlay.classList.remove('open');
+  }
+  modalCancel.addEventListener('click', closeModal);
+  modalOverlay.addEventListener('click', e => { if (e.target === modalOverlay) closeModal(); });
+  modalConfirm.addEventListener('click', () => {
+    if (!pendingDelete) return;
+    const { colIdx, cardIdx } = pendingDelete;
+    data[colIdx].cards.splice(cardIdx, 1);
+    closeModal();
+    render();
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && modalOverlay.classList.contains('open')) closeModal();
+  });
+
+  /* ---- レンダリング ---- */
+  function render() {
+    const board = document.getElementById('board');
+    board.innerHTML = '';
+    data.forEach((col, colIdx) => board.appendChild(buildColumn(col, colIdx)));
+  }
+
+  function buildColumn(col, colIdx) {
+    const colEl = document.createElement('div');
+    colEl.className = 'column';
+    colEl.setAttribute('aria-label', `${col.title} カラム`);
+
+    const header = document.createElement('div');
+    header.className = 'column-header';
+    header.innerHTML = `
+      <span class="column-title">${esc(col.title)}</span>
+      <span class="column-count" aria-label="${col.cards.length}枚のカード">${col.cards.length}</span>`;
+    colEl.appendChild(header);
+
+    const list = document.createElement('div');
+    list.className = 'card-list';
+    list.dataset.colIdx = colIdx;
+
+    col.cards.forEach((card, cardIdx) => {
+      list.appendChild(buildCard(card, colIdx, cardIdx));
+    });
+
+    /* ---- ドロップゾーンイベント ---- */
+    list.addEventListener('dragover', e => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      list.classList.add('drag-over');
+
+      // 挿入インジケーター
+      removeIndicators(list);
+      const afterEl = getDragAfterElement(list, e.clientY);
+      const indicator = document.createElement('div');
+      indicator.className = 'drop-indicator';
+      if (afterEl) {
+        list.insertBefore(indicator, afterEl);
+      } else {
+        list.appendChild(indicator);
+      }
+    });
+
+    list.addEventListener('dragleave', e => {
+      if (!list.contains(e.relatedTarget)) {
+        list.classList.remove('drag-over');
+        removeIndicators(list);
+      }
+    });
+
+    list.addEventListener('drop', e => {
+      e.preventDefault();
+      list.classList.remove('drag-over');
+      removeIndicators(list);
+      if (!dragState) return;
+
+      const { srcColIdx, srcCardIdx } = dragState;
+      const destColIdx = parseInt(list.dataset.colIdx);
+      const afterEl = getDragAfterElement(list, e.clientY);
+
+      const [card] = data[srcColIdx].cards.splice(srcCardIdx, 1);
+
+      if (afterEl && afterEl.dataset.cardId) {
+        const destCardIdx = data[destColIdx].cards.findIndex(c => c.id === afterEl.dataset.cardId);
+        data[destColIdx].cards.splice(destCardIdx, 0, card);
+      } else {
+        data[destColIdx].cards.push(card);
+      }
+
+      dragState = null;
+      render();
+    });
+
+    colEl.appendChild(list);
+    colEl.appendChild(buildAddForm(colIdx));
+    return colEl;
+  }
+
+  function buildCard(card, colIdx, cardIdx) {
+    const el = document.createElement('div');
+    el.className = 'card';
+    el.draggable = true;
+    el.dataset.cardId = card.id;
+
+    const titleEl = document.createElement('div');
+    titleEl.className = 'card-title editable';
+    titleEl.textContent = card.title;
+    titleEl.setAttribute('title', 'ダブルクリックで編集');
+    titleEl.setAttribute('tabindex', '0');
+    titleEl.setAttribute('role', 'button');
+    titleEl.setAttribute('aria-label', `${card.title} — ダブルクリックで編集`);
+    titleEl.addEventListener('dblclick', () => startEdit(el, card, colIdx, cardIdx));
+    titleEl.addEventListener('keydown', e => {
+      if (e.key === 'Enter') startEdit(el, card, colIdx, cardIdx);
+    });
+    el.appendChild(titleEl);
+
+    const actions = document.createElement('div');
+    actions.className = 'card-actions';
+
+    const delBtn = document.createElement('button');
+    delBtn.className = 'btn-delete';
+    delBtn.innerHTML = '🗑';
+    delBtn.setAttribute('aria-label', `${card.title} を削除`);
+    delBtn.addEventListener('click', () => openDeleteModal(colIdx, cardIdx));
+    actions.appendChild(delBtn);
+    el.appendChild(actions);
+
+    /* ---- ドラッグイベント ---- */
+    el.addEventListener('dragstart', e => {
+      dragState = { cardId: card.id, srcColIdx: colIdx, srcCardIdx: cardIdx };
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', card.id);
+      // 次フレームで .dragging 付与（スナップショット取得後）
+      requestAnimationFrame(() => el.classList.add('dragging'));
+    });
+
+    el.addEventListener('dragend', () => {
+      el.classList.remove('dragging');
+      document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+      document.querySelectorAll('.drop-indicator').forEach(el => el.remove());
+      dragState = null;
+    });
+
+    return el;
+  }
+
+  /* ドラッグ位置から「この要素の後に挿入」を返す */
+  function getDragAfterElement(container, y) {
+    const draggables = [...container.querySelectorAll('.card:not(.dragging)')];
+    return draggables.reduce((closest, child) => {
+      const box = child.getBoundingClientRect();
+      const offset = y - box.top - box.height / 2;
+      if (offset < 0 && offset > closest.offset) {
+        return { offset, element: child };
+      }
+      return closest;
+    }, { offset: Number.NEGATIVE_INFINITY }).element;
+  }
+
+  function removeIndicators(list) {
+    list.querySelectorAll('.drop-indicator').forEach(el => el.remove());
+  }
+
+  function startEdit(cardEl, card, colIdx, cardIdx) {
+    const titleEl = cardEl.querySelector('.card-title');
+    cardEl.draggable = false; // 編集中はドラッグ無効
+    const textarea = document.createElement('textarea');
+    textarea.className = 'card-edit-input';
+    textarea.value = card.title;
+    textarea.maxLength = 100;
+    textarea.setAttribute('aria-label', 'カードタイトルを編集');
+    titleEl.replaceWith(textarea);
+    textarea.focus();
+    textarea.select();
+
+    function save() {
+      const val = textarea.value.trim();
+      if (val) data[colIdx].cards[cardIdx].title = val;
+      cardEl.draggable = true;
+      const newTitle = document.createElement('div');
+      newTitle.className = 'card-title editable';
+      newTitle.textContent = val || card.title;
+      newTitle.setAttribute('title', 'ダブルクリックで編集');
+      newTitle.setAttribute('tabindex', '0');
+      newTitle.setAttribute('role', 'button');
+      newTitle.setAttribute('aria-label', `${newTitle.textContent} — ダブルクリックで編集`);
+      textarea.replaceWith(newTitle);
+      newTitle.addEventListener('dblclick', () => startEdit(cardEl, data[colIdx].cards[cardIdx], colIdx, cardIdx));
+      newTitle.addEventListener('keydown', e => {
+        if (e.key === 'Enter') startEdit(cardEl, data[colIdx].cards[cardIdx], colIdx, cardIdx);
+      });
+      const delBtn = cardEl.querySelector('.btn-delete');
+      if (delBtn) delBtn.setAttribute('aria-label', `${newTitle.textContent} を削除`);
+    }
+
+    textarea.addEventListener('blur', save);
+    textarea.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); save(); }
+      if (e.key === 'Escape') { textarea.value = card.title; save(); }
+    });
+  }
+
+  function buildAddForm(colIdx) {
+    const wrapper = document.createElement('div');
+
+    const btn = document.createElement('button');
+    btn.className = 'btn-add-card';
+    btn.setAttribute('aria-label', `${data[colIdx].title} カラムにカードを追加`);
+    btn.innerHTML = '<span class="plus">+</span> カードを追加';
+
+    const form = document.createElement('div');
+    form.className = 'add-card-form';
+
+    const textarea = document.createElement('textarea');
+    textarea.placeholder = 'カードのタイトルを入力...';
+    textarea.maxLength = 100;
+    textarea.rows = 2;
+    textarea.setAttribute('aria-label', '新しいカードのタイトル');
+
+    const errMsg = document.createElement('div');
+    errMsg.className = 'form-error';
+    errMsg.textContent = 'タイトルを入力してください';
+    errMsg.setAttribute('role', 'alert');
+    errMsg.id = `err-${colIdx}`;
+
+    const formActions = document.createElement('div');
+    formActions.className = 'add-card-form-actions';
+
+    const addBtn = document.createElement('button');
+    addBtn.className = 'btn-primary';
+    addBtn.textContent = '追加';
+    addBtn.setAttribute('aria-describedby', `err-${colIdx}`);
+
+    const cancelBtn = document.createElement('button');
+    cancelBtn.className = 'btn-cancel';
+    cancelBtn.textContent = 'キャンセル';
+
+    formActions.appendChild(addBtn);
+    formActions.appendChild(cancelBtn);
+    form.appendChild(textarea);
+    form.appendChild(errMsg);
+    form.appendChild(formActions);
+    wrapper.appendChild(btn);
+    wrapper.appendChild(form);
+
+    btn.addEventListener('click', () => {
+      btn.style.display = 'none';
+      form.classList.add('open');
+      textarea.value = '';
+      errMsg.classList.remove('show');
+      textarea.focus();
+    });
+
+    function closeForm() {
+      form.classList.remove('open');
+      btn.style.display = '';
+      errMsg.classList.remove('show');
+    }
+
+    cancelBtn.addEventListener('click', closeForm);
+
+    addBtn.addEventListener('click', () => {
+      const val = textarea.value.trim();
+      if (!val) { errMsg.classList.add('show'); textarea.focus(); return; }
+      data[colIdx].cards.push({ id: `c${nextCardId++}`, title: val });
+      closeForm();
+      render();
+    });
+
+    textarea.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); addBtn.click(); }
+      if (e.key === 'Escape') closeForm();
+    });
+
+    return wrapper;
+  }
+
+  function esc(str) {
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  render();
+</script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+{
+  "env": {
+    "PATH": "C:\\Program Files\\Docker\\Docker\\resources\\bin;C:\\Program Files\\GitHub CLI;${PATH}"
+  },
+  "permissions": {
+    "allow": [
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)",
+      "WebSearch",
+      "Bash(./gradlew bootRun)"
+    ]
+  }
+}

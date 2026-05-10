@@ -12,4 +12,4 @@ backend/build/
 Thumbs.db
 
 # Claude
-.claude/
+.claude/settings.local.json

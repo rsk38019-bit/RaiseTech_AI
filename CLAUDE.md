@@ -89,3 +89,4 @@ Closes #<Issue番号>
 - ブランチ作成前にIssue番号を確認する
 - コミット前にメッセージがConventional Commits形式か確認する
 - PR作成時は必ず `Closes #<番号>` を本文に含める
+- ユーザーが「マージしました」「マージした」と伝えたら、自動で `git checkout main && git pull origin main` を実行する

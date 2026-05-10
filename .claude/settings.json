@@ -10,5 +10,20 @@
       "WebSearch",
       "Bash(./gradlew bootRun)"
     ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "powershell",
+            "command": "$cmd = ($input | ConvertFrom-Json).tool_input.command; if ($cmd -match 'gradlew') { $procs = Get-Process -Name java -ErrorAction SilentlyContinue; if ($procs) { $procs | Stop-Process -Force } }",
+            "statusMessage": "既存のJavaプロセスを確認中..."
+          }
+        ]
+      }
+    ]
   }
 }

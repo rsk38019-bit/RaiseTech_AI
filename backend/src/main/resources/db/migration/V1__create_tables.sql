@@ -1,0 +1,24 @@
+CREATE TABLE boards (
+    id         BIGSERIAL    PRIMARY KEY,
+    title      VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE columns (
+    id         BIGSERIAL    PRIMARY KEY,
+    board_id   BIGINT       NOT NULL REFERENCES boards(id) ON DELETE CASCADE,
+    title      VARCHAR(255) NOT NULL,
+    position   INT          NOT NULL,
+    created_at TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE cards (
+    id         BIGSERIAL    PRIMARY KEY,
+    column_id  BIGINT       NOT NULL REFERENCES columns(id) ON DELETE CASCADE,
+    title      VARCHAR(100) NOT NULL,
+    position   INT          NOT NULL,
+    created_at TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP
+);

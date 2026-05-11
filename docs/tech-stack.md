@@ -2,21 +2,23 @@
 
 ## フロントエンド
 
-| 分類 | 技術 |
-|------|------|
-| フレームワーク | React 18 + TypeScript |
-| ビルドツール | Vite |
-| スタイリング | Tailwind CSS |
-| 状態管理 | React useState / useReducer |
+| 分類 | 技術 | バージョン |
+|------|------|-----------|
+| フレームワーク | React | 19.2.6 |
+| 言語 | TypeScript | 6.0.2 |
+| ビルドツール | Vite | 5.4.21 |
+| スタイリング | Tailwind CSS | 3.4.19 |
+| 状態管理 | React useState / useReducer | − |
 
 ## バックエンド
 
-| 分類 | 技術 |
-|------|------|
-| 言語 | Java 21 (LTS) |
-| フレームワーク | Spring Boot 4.0.6 |
-| API形式 | REST API |
-| ビルドツール | Gradle 8.14 (Kotlin DSL) |
+| 分類 | 技術 | バージョン |
+|------|------|-----------|
+| 言語 | Java | 25 |
+| フレームワーク | Spring Boot | 4.0.6 |
+| API形式 | REST API | − |
+| ビルドツール | Gradle | 8.14 |
+| DBマイグレーション | Flyway | − |
 
 ## データベース
 

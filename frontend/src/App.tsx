@@ -4,7 +4,7 @@ import { useBoard } from './hooks/useBoard'
 const BOARD_ID = 1
 
 export default function App() {
-  const { board, loading, error } = useBoard(BOARD_ID)
+  const { board, loading, error, addCard } = useBoard(BOARD_ID)
 
   if (loading) {
     return (
@@ -24,5 +24,5 @@ export default function App() {
 
   if (!board) return null
 
-  return <Board board={board} />
+  return <Board board={board} onAddCard={addCard} />
 }

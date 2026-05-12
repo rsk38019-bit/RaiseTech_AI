@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
-import { fetchBoard } from '../api/boardApi'
-import type { Board } from '../types/board'
+import { fetchBoard, createCard } from '../api/boardApi'
+import type { Board, Card } from '../types/board'
 
 interface UseBoardResult {
   board: Board | null
   loading: boolean
   error: string | null
+  addCard: (columnId: number, title: string) => Promise<Card>
 }
 
 export function useBoard(boardId: number): UseBoardResult {
@@ -22,5 +23,21 @@ export function useBoard(boardId: number): UseBoardResult {
       .finally(() => setLoading(false))
   }, [boardId])
 
-  return { board, loading, error }
+  async function addCard(columnId: number, title: string): Promise<Card> {
+    const card = await createCard(columnId, title)
+    setBoard((prev) => {
+      if (!prev) return prev
+      return {
+        ...prev,
+        columns: prev.columns.map((col) =>
+          col.id === columnId
+            ? { ...col, cards: [...col.cards, card] }
+            : col
+        ),
+      }
+    })
+    return card
+  }
+
+  return { board, loading, error, addCard }
 }

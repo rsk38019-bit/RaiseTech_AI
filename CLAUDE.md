@@ -90,3 +90,17 @@ Closes #<Issue番号>
 - コミット前にメッセージがConventional Commits形式か確認する
 - PR作成時は必ず `Closes #<番号>` を本文に含める
 - ユーザーが「マージしました」「マージした」と伝えたら、自動で `git checkout main && git pull origin main` を実行する
+
+## 動作確認時のサーバー起動ルール
+
+動作確認が必要な場合は、以下の順序でサーバーを起動する：
+
+1. **PostgreSQL** — `docker compose up -d`（起動済みであればスキップ）
+2. **Spring Boot** — `./gradlew bootRun`（ポート: 8080）
+3. **Vite dev server** — `npm run dev`（ポート: 5173）
+
+### ポート競合時の対応
+
+- ポートが競合している場合は、**占有しているプロセスを停止**してからサーバーを起動する
+- アプリ内で指定されているポート（バックエンド: 8080、フロントエンド: 5173）を必ず使用する
+- ポート使用状況の確認: `Get-NetTCPConnection -LocalPort <ポート番号>`
